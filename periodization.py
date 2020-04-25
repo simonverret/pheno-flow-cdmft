@@ -73,14 +73,14 @@ Ry = np.array([0,0,1,1])
 Rx = np.array([0,1,1,0])
 
 tc  = np.array([[ 0., -t , -tp, -t ],
-                [-t ,  0., -t , -tp],
-                [-tp, -t ,  0., -t ],
-                [-t , -tp, -t ,  0.]])
+                                [-t ,  0., -t , -tp],
+                                [-tp, -t ,  0., -t ],
+                                [-t , -tp, -t ,  0.]])
 
 tc2 = np.array([[ 0.,  t , -tp,  t ],
-                [ t ,  0.,  t , -tp],
-                [-tp,  t ,  0.,  t ],
-                [ t , -tp,  t ,  0.]])
+                                [ t ,  0.,  t , -tp],
+                                [-tp,  t ,  0.,  t ],
+                                [ t , -tp,  t ,  0.]])
 
 
 Nky = Nkx
@@ -91,66 +91,64 @@ AkwExact = np.zeros([Nkx,Nky])
 tkQ= np.zeros([4,4],dtype='complex')
 
 for xx in range(Nkx):
-  # print xx, ' of ', Nkx
-  for yy in range(Nky):
-    kx = 1.*np.pi*1.*float(xx)/(float(Nkx-1.))
-    ky = 1.*np.pi*1.*float(yy)/(float(Nky-1.))
-    
-    ex  = np.exp(-2.j*kx)
-    emx = np.exp( 2.j*kx)
-    ey  = np.exp(-2.j*ky)
-    emy = np.exp( 2.j*ky)
-    
-    dtk = np.array([[-tpp*(emx+ex+ey+emy)     ,  -t*ex                  ,  -tp*(ex + ey + ex*ey),  -t*ey                   ],
-                    [-t*emx                   ,  -tpp*(emx+ex+ey+emy)   ,  -t*ey                ,  -tp*(emx + ey + emx*ey) ],
-                    [-tp*(emx + emy + emx*emy),  -t*emy                 ,  -tpp*(emx+ex+ey+emy) ,  -t*emx                  ],
-                    [-t*emy                   ,  -tp*(ex + emy + ex*emy),  -t*ex                ,  -tpp*(emx+ex+ey+emy)    ]])
-
-    
-    dtk2= np.array([[-tpp*(emx+ex+ey+emy)     ,   t*ex                  ,  -tp*(ex + ey + ex*ey),   t*ey                   ],
-                    [ t*emx                   ,  -tpp*(emx+ex+ey+emy)   ,   t*ey                ,  -tp*(emx + ey + emx*ey) ],
-                    [-tp*(emx + emy + emx*emy),   t*emy                 ,  -tpp*(emx+ex+ey+emy) ,   t*emx                  ],
-                    [ t*emy                   ,  -tp*(ex + emy + ex*emy),   t*ex                ,  -tpp*(emx+ex+ey+emy)    ]])
-    
-    tpp_c=0
-    dtk3= np.array([[-tpp_c*(emx+ex+ey+emy)     ,   t*ex                  ,  -tp*(ex + ey + ex*ey),   t*ey                   ],
-                    [ t*emx                   ,  -tpp_c*(emx+ex+ey+emy)   ,   t*ey                ,  -tp*(emx + ey + emx*ey) ],
-                    [-tp*(emx + emy + emx*emy),   t*emy                 ,  -tpp_c*(emx+ex+ey+emy) ,   t*emx                  ],
-                    [ t*emy                   ,  -tp*(ex + emy + ex*emy),   t*ex                ,  -tpp_c*(emx+ex+ey+emy)    ]])
-
-    
-    cumul = LA.inv( z*np.identity(4) - M*M*LA.inv(z*np.identity(4) - tc2) )
-    denom = z*np.identity(4) -tc - dtk - M*M*LA.inv(z*np.identity(4) - tc2)
-    denomCT = z*np.identity(4) -tc - dtk - M*M*LA.inv(z*np.identity(4) - tc2 - dtk3)
-    denomExact = z*np.identity(4) -tc - dtk - M*M*LA.inv(z*np.identity(4) - tc2 - dtk2)
-
-    G_ktilde = LA.inv(denom)
-    G_ktilde_CT = LA.inv(denomCT)
-    G_ktilde_exact = LA.inv(denomExact)
-
-    G_per = 0.0
-    cumul_per = 0.0
-    denom_per = 0.0
-    G_CT = 0.0
-    G_exact = 0.0
-
-    for jj in range(0,4):
-      for ii in range(0,4):
-        G_per += (1./4.) * G_ktilde[ii,jj]  * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
-        # denom_per += (1./4.) * denom[ii,jj] * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
-        cumul_per += (1./4.) * cumul[ii,jj]  * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
-        G_CT += (1./4.) * G_ktilde_CT[ii,jj]  * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
-        G_exact += (1./4.) * G_ktilde_exact[ii,jj]  * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
+    # print xx, ' of ', Nkx
+    for yy in range(Nky):
+        kx = 1.*np.pi*1.*float(xx)/(float(Nkx-1.))
+        ky = 1.*np.pi*1.*float(yy)/(float(Nky-1.))
         
+        ex  = np.exp(-2.j*kx)
+        emx = np.exp( 2.j*kx)
+        ey  = np.exp(-2.j*ky)
+        emy = np.exp( 2.j*ky)
+        
+        dtk = np.array([[-tpp*(emx+ex+ey+emy)     ,  -t*ex                  ,  -tp*(ex + ey + ex*ey),  -t*ey                   ],
+                        [-t*emx                   ,  -tpp*(emx+ex+ey+emy)   ,  -t*ey                ,  -tp*(emx + ey + emx*ey) ],
+                        [-tp*(emx + emy + emx*emy),  -t*emy                 ,  -tpp*(emx+ex+ey+emy) ,  -t*emx                  ],
+                        [-t*emy                   ,  -tp*(ex + emy + ex*emy),  -t*ex                ,  -tpp*(emx+ex+ey+emy)    ]])
 
-    #G_per = 1./denom_per 
-    Akw[xx,yy] = -np.imag(G_per)
+        dtk2= np.array([[-tpp*(emx+ex+ey+emy)     ,   t*ex                  ,  -tp*(ex + ey + ex*ey),   t*ey                   ],
+                        [ t*emx                   ,  -tpp*(emx+ex+ey+emy)   ,   t*ey                ,  -tp*(emx + ey + emx*ey) ],
+                        [-tp*(emx + emy + emx*emy),   t*emy                 ,  -tpp*(emx+ex+ey+emy) ,   t*emx                  ],
+                        [ t*emy                   ,  -tp*(ex + emy + ex*emy),   t*ex                ,  -tpp*(emx+ex+ey+emy)    ]])
 
-    epsilon_k = -2*t*(np.cos(kx)+np.cos(ky)) - 4*tp*np.cos(kx)*np.cos(ky)
-    AkwM[xx,yy] = -2*np.imag(1/(1/cumul_per - epsilon_k))
+        tpp_c=0
+        dtk3= np.array([[-tpp_c*(emx+ex+ey+emy)   ,   t*ex                  ,  -tp*(ex + ey + ex*ey) ,   t*ey                   ],
+                        [ t*emx                   ,  -tpp_c*(emx+ex+ey+emy) ,   t*ey                 ,  -tp*(emx + ey + emx*ey) ],
+                        [-tp*(emx + emy + emx*emy),   t*emy                 ,  -tpp_c*(emx+ex+ey+emy),   t*emx                  ],
+                        [ t*emy                   ,  -tp*(ex + emy + ex*emy),   t*ex                 ,  -tpp_c*(emx+ex+ey+emy)  ]])
 
-    AkwCT[xx,yy] = -np.imag(G_CT)
-    AkwExact[xx,yy] = -np.imag(G_exact)
+        cumul = LA.inv( z*np.identity(4) - M*M*LA.inv(z*np.identity(4) - tc2) )
+        denom = z*np.identity(4) -tc - dtk - M*M*LA.inv(z*np.identity(4) - tc2)
+        denomCT = z*np.identity(4) -tc - dtk - M*M*LA.inv(z*np.identity(4) - tc2 - dtk3)
+        denomExact = z*np.identity(4) -tc - dtk - M*M*LA.inv(z*np.identity(4) - tc2 - dtk2)
+
+        G_ktilde = LA.inv(denom)
+        G_ktilde_CT = LA.inv(denomCT)
+        G_ktilde_exact = LA.inv(denomExact)
+
+        G_per = 0.0
+        cumul_per = 0.0
+        denom_per = 0.0
+        G_CT = 0.0
+        G_exact = 0.0
+
+        for jj in range(0,4):
+            for ii in range(0,4):
+                G_per += (1./4.) * G_ktilde[ii,jj]  * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
+                # denom_per += (1./4.) * denom[ii,jj] * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
+                cumul_per += (1./4.) * cumul[ii,jj]  * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
+                G_CT += (1./4.) * G_ktilde_CT[ii,jj]  * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
+                G_exact += (1./4.) * G_ktilde_exact[ii,jj]  * np.exp(1.0j*(((Rx[jj]-Rx[ii]))*kx + ((Ry[jj]-Ry[ii]))*ky) )
+                
+
+        #G_per = 1./denom_per 
+        Akw[xx,yy] = -np.imag(G_per)
+
+        epsilon_k = -2*t*(np.cos(kx)+np.cos(ky)) - 4*tp*np.cos(kx)*np.cos(ky)
+        AkwM[xx,yy] = -2*np.imag(1/(1/cumul_per - epsilon_k))
+
+        AkwCT[xx,yy] = -np.imag(G_CT)
+        AkwExact[xx,yy] = -np.imag(G_exact)
 
 
 #%%
@@ -159,17 +157,17 @@ X,Y = np.meshgrid(np.array(range(Nkx)),np.array(range(Nky)))
 plt.rc('text', usetex=True)
 plt.rc('font', family='Serif')
 plt.rc('text.latex', preamble=r'''
-  \usepackage[utf8]{inputenc}
-  \usepackage{amssymb}
-  \usepackage{amsmath}
-  \usepackage{esint}
-  \usepackage{amsfonts}
-  \usepackage{dsfont}
-  \usepackage{bm}
-  \renewcommand{\vec}[1]{\bm{\mathrm{#1}}}
+    \usepackage[utf8]{inputenc}
+    \usepackage{amssymb}
+    \usepackage{amsmath}
+    \usepackage{esint}
+    \usepackage{amsfonts}
+    \usepackage{dsfont}
+    \usepackage{bm}
+    \renewcommand{\vec}[1]{\bm{\mathrm{#1}}}
 ''')
-  # won't work in vscode ipython notebook
-  # \usepackage{txfonts}
+    # won't work in vscode ipython notebook
+    # \usepackage{txfonts}
 
 w = 3.5
 h = 2.5
