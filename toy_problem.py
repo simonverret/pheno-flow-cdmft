@@ -144,16 +144,16 @@ for batch in range(1,args.epochs):
         for g in optimizer.param_groups: g['lr'] = rate
     else:
         rate = args.lr
-    print(f'loss = {loss:8.4f}    lr = {rate:8.4f}')
     loss_history.append(loss.item())
 
     optimizer.step()
     if batch%(args.epochs//60) == 1:
         model_history.append(deepcopy(model_Akw))
-        print("  tp", round(float(model_Akw.tp), 3))
-        print("  tpp", round(float(model_Akw.tpp), 3))
-        print("  mu", round(float(model_Akw.mu), 3))
-        print("  eta", round(float(model_Akw.eta), 3))
+        print(f'  loss = {loss:8.4f}    lr = {rate:8.4f}')
+        print("    tp", round(float(model_Akw.tp), 3))
+        print("    tpp", round(float(model_Akw.tpp), 3))
+        print("    mu", round(float(model_Akw.mu), 3))
+        print("    eta", round(float(model_Akw.eta), 3))
 
 if args.plot:
     print_fkw(model_Akw)
@@ -181,12 +181,13 @@ if args.animate:
     
     ax2 = plt.subplot(212)
     ax2.set_aspect('equal', 'box')
-    ax2.pcolormesh(
+    error = ax2.pcolormesh(
         np.transpose(kx),
         np.transpose(ky),
         np.transpose(error_on_mesh.detach()),
         vmin=0, vmax = 5,
     )
+    fig.colorbar(error, ax=ax2)
 
     def animate(i):
         new_Akw_on_mesh = model_history[i](kxx,kyy,0)
