@@ -14,8 +14,8 @@ default_args = {
     'loss' : 'KL',
     'schedule' : '',
     'factor' : 0.9,
-    'plot' : False,
-    'plot_loss' : False,
+    'plot' : True,
+    'plot_loss' : True,
     'animate' : False,
     'optim' : 'Adam',
     'batch_size' : 1000,
@@ -50,15 +50,26 @@ def dispersion(kx, ky, mu=-1, t=1, tp=-0.3, tpp=0.2):
     return out
 
 
-def spectral_weight(omega, energy, eta=0.05):
-    return eta / ((omega - energy)**2 + eta**2)
+def spectral_weight(omega, energy, eta=0.05, re_sigma=0, im_sigma=0):
+    return eta / ((omega - energy + re_sigma)**2 + (eta + im_sigma)**2)
 
 
-def print_fkw(function_of_kx_ky_w, w=0, save_path=None):
-    kx = torch.linspace(0,np.pi,101)
-    ky = torch.linspace(0,np.pi,101)
+def print_fkw(function_of_kx_ky_w, w=0, save_path=None, idx=0):
+    kx = torch.linspace(0,np.pi,101).float()
+    ky = torch.linspace(0,np.pi,101).float()
     kxx, kyy = torch.meshgrid(kx, ky)
+
+    ## for compatibility with neural nets
+    kxx = kxx.unsqueeze(-1)
+    kyy = kyy.unsqueeze(-1)
+    w = (w*torch.ones_like(kxx)).float()
+    
     Akw_on_mesh = function_of_kx_ky_w(kxx,kyy,w)
+    if isinstance(Akw_on_mesh, tuple):
+        Akw_on_mesh = Akw_on_mesh[idx]
+
+    ## for compatibility with neural nets
+    Akw_on_mesh = Akw_on_mesh.squeeze()
 
     fig = plt.figure(figsize=(4, 6), dpi=80, facecolor='w', edgecolor='k')
     ax = plt.subplot(111)
@@ -73,14 +84,26 @@ def print_fkw(function_of_kx_ky_w, w=0, save_path=None):
     plt.show()
 
 
-target_Akw = lambda kx,ky,w: spectral_weight(w, dispersion(kx,ky))
+def YRZ_sigma(kx, ky, omega, delta=0.2, eta=0.05):
+    xi0 = dispersion(kx, ky, tp=0, tpp=0, mu=0)
+    re_sigma = delta**2 * (omega - xi0) / ((omega - xi0)**2 + (eta)**2)
+    im_sigma = delta**2 * eta / ((omega - xi0)**2 + (eta)**2)
+    return re_sigma, im_sigma
+
+
+def target_Akw(kx, ky, w, eta=0.1, delta=0.3):
+    re_sigma, im_sigma = YRZ_sigma(kx,ky,w, delta, eta)
+    xi = dispersion(kx,ky)
+    return spectral_weight(w, xi, eta, re_sigma, im_sigma)
+
+
 print('target')
-# print_fkw(target_Akw)
+print_fkw(target_Akw)
+print_fkw(YRZ_sigma, idx=0)
+print_fkw(YRZ_sigma, idx=1)
 
 
-# differentiable spectral weight
-
-class DifferentiableSW(nn.Module):
+class Differentiable_spectral_weight(nn.Module):
     def __init__(self, tp0=0.0, tpp0=0.0, mu0=0.0, eta0=1.0):
         super().__init__()
         self.tp = nn.Parameter(torch.Tensor([tp0]))
@@ -94,10 +117,62 @@ class DifferentiableSW(nn.Module):
         return out
 
 
-model_Akw = DifferentiableSW()
-print('starting model')
-# print_fkw(model_Akw)
+class ThreeToOneNN(nn.Module):
+    def __init__(self, hsize=16):
+        super().__init__()
+        self.linear1 = nn.Linear(3,hsize)
+        self.linear2 = nn.Linear(hsize,1)
 
+        ## initialization of weights
+        nn.init.xavier_uniform(self.linear1.weight)
+        self.linear1.bias.data.fill_(0.01)
+        nn.init.xavier_uniform(self.linear1.weight)
+        self.linear1.bias.data.fill_(0.01)
+
+    def forward(self, kx, ky, w):
+        cat = torch.stack([kx,ky,w], dim=-1)
+        out = F.relu(self.linear1(cat))
+        out = F.relu(self.linear2(out))
+        out = out.squeeze(-1)
+        return out
+
+
+class NeuralSelf(nn.Module):
+    def __init__(self, eta=0.05):
+        super().__init__()
+        self.delta = ThreeToOneNN()
+        self.xi = ThreeToOneNN()
+        self.eta = eta
+
+    def forward(self, kx, ky, w):
+        delta_sq = self.delta(kx, ky, w)**2
+        diff_w_xi = w - self.xi(kx, ky, w)
+        eta_sq = self.eta**2
+        re = delta_sq * diff_w_xi /(diff_w_xi**2 + eta_sq)
+        im = delta_sq * eta_sq /(diff_w_xi**2 + eta_sq)
+        return re, im
+
+
+class Differentiable_spectral_weight_with_self(nn.Module):
+    def __init__(self, tp0=0.0, tpp0=0.0, mu0=0.0, eta0=1.0):
+        super().__init__()
+        self.tp = nn.Parameter(torch.Tensor([tp0]))
+        self.tpp = nn.Parameter(torch.Tensor([tpp0]))
+        self.mu = nn.Parameter(torch.Tensor([mu0]))
+        self.eta = nn.Parameter(torch.Tensor([eta0]))
+        self.neural_self = NeuralSelf()
+
+    def forward(self, kx, ky, w):
+        disp = dispersion(kx, ky, mu=self.mu, t=1, tp=self.tp, tpp=self.tpp)
+        re_sigma, im_sigma = self.neural_self(kx, ky, w)
+        eta = torch.abs(self.eta)
+        out = spectral_weight(w, disp, eta, re_sigma, im_sigma)
+        return out
+
+
+model_Akw = Differentiable_spectral_weight_with_self()
+# print('starting model')
+# print_fkw(model_Akw)
 
 def manual_KL(Amodel, Atarget):
     return (Atarget*Atarget.log() - Atarget*Amodel.log()).mean()
@@ -106,9 +181,8 @@ def my_loss(Amodel, Atarget):
     return (Atarget*Atarget.log() - Atarget*Amodel.log()).mean()
 
 
-
 if args.optim == 'adam' or args.optim == 'Adam':
-    optimizer = torch.optim.Adam(model_Akw.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(model_Akw.parameters(), lr=args.lr, weight_decay=0.1)
 elif args.optim == 'sgd' or args.optim == 'SGD':
     optimizer = torch.optim.SGD(model_Akw.parameters(), lr=args.lr)
 
@@ -130,7 +204,9 @@ for batch in range(1,args.epochs):
     # assert manual_KL(results,targets) -  F.kl_div(results.log(),targets) < 1e-4
     if args.loss == 'manual':
         loss = my_loss(results,targets)
-    elif args.loss == 'mse' or args.loss == 'MSE':
+    elif args.loss in ['mse','MSE','l2','L2']:
+        loss = F.mse_loss(results, targets)
+    elif args.loss in ['mae','MAE','l1','L1']:
         loss = F.l1_loss(results, targets)
     else :
         loss = F.kl_div(results.log(), targets)
@@ -161,6 +237,10 @@ if args.plot_loss:
     plt.plot(loss_history)
     plt.show()
 
+print('real self')
+print_fkw(model_Akw.neural_self, idx=0)
+print('imaginary self')
+print_fkw(model_Akw.neural_self, idx=1)
 
 if args.animate:
     print("preparing animation")
