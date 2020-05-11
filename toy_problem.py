@@ -10,8 +10,8 @@ from matplotlib.animation import FuncAnimation
 import argparse
 
 default_args = {
-    'lr' : 0.01,
-    'loss' : 'KL',
+    'lr' : 0.05,
+    'loss' : 'JS',
     'schedule' : '',
     'factor' : 0.9,
     'plot' : True,
@@ -174,11 +174,17 @@ model_Akw = Differentiable_spectral_weight_with_self()
 # print('starting model')
 # print_fkw(model_Akw)
 
-def manual_KL(Amodel, Atarget):
-    return (Atarget*Atarget.log() - Atarget*Amodel.log()).mean()
+def kl_div(Amodel, Atarget):
+    """Kullback-Leibler Divergence"""
+    return (Amodel*Amodel.log() - Amodel*Atarget.log()).mean()
 
-def my_loss(Amodel, Atarget):
-    return (Atarget*Atarget.log() - Atarget*Amodel.log()).mean()
+def js_div(Amodel, Atarget):
+    """Jensen-Shannone Divergence"""
+    Amiddle = (Amodel + Atarget)/2
+    return (kl_div(Amodel, Amiddle) + kl_div(Atarget, Amiddle))/2
+
+def manual_loss(Amodel, Atarget):
+    return (Atarget*Atarget.log() - Atarget*Amodel.log() - Amodel*Atarget.log()).mean()
 
 
 if args.optim == 'adam' or args.optim == 'Adam':
@@ -203,16 +209,18 @@ for batch in range(1,args.epochs):
     # I checked this:
     # assert manual_KL(results,targets) -  F.kl_div(results.log(),targets) < 1e-4
     if args.loss == 'manual':
-        loss = my_loss(results,targets)
+        loss = manual_loss(results,targets)
     elif args.loss in ['mse','MSE','l2','L2']:
         loss = F.mse_loss(results, targets)
     elif args.loss in ['mae','MAE','l1','L1']:
         loss = F.l1_loss(results, targets)
+    elif args.loss in ['JS', 'js', 'Jesen-Shannon']:
+        loss = js_div(results, targets)
     else :
         loss = F.kl_div(results.log(), targets)
     loss.backward()
 
-    if args.schedule == 'KL':
+    if args.schedule in ['loss','KL']:
         rate = args.lr * loss.item()
         for g in optimizer.param_groups: g['lr'] = rate
     elif args.schedule == 'exp':
