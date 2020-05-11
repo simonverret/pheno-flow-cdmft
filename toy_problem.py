@@ -20,6 +20,7 @@ default_args = {
     'optim' : 'Adam',
     'batch_size' : 1000,
     'epochs': 500
+    'window': 0.5,
 }
 
 parser = argparse.ArgumentParser()
