@@ -196,11 +196,11 @@ elif args.optim == 'sgd' or args.optim == 'SGD':
 print('training')
 model_history = []
 loss_history = []
-for batch in range(1,args.epochs):
-    # sample a thousand random (kx,ky,w) points
+for epoch in range(1,args.epochs):
     kx_batch = torch.FloatTensor(args.batch_size).uniform_(0, np.pi)
     ky_batch = torch.FloatTensor(args.batch_size).uniform_(0, np.pi)
-    w_batch = torch.FloatTensor(args.batch_size).uniform_(-2, 2)
+    W = args.window/2
+    w_batch = torch.FloatTensor(args.batch_size).uniform_(-W, W)
 
     optimizer.zero_grad()
     results = model_Akw(kx_batch,ky_batch,w_batch)
@@ -231,13 +231,13 @@ for batch in range(1,args.epochs):
     loss_history.append(loss.item())
 
     optimizer.step()
-    if batch%(args.epochs//60) == 1:
+    if epoch%(args.epochs//60) == 1:
         model_history.append(deepcopy(model_Akw))
         print(f'  loss = {loss:8.4f}    lr = {rate:8.4f}')
         print("    tp", round(float(model_Akw.tp), 3))
         print("    tpp", round(float(model_Akw.tpp), 3))
         print("    mu", round(float(model_Akw.mu), 3))
-        print("    eta", round(float(model_Akw.eta), 3))
+        print("    eta", round(abs(float(model_Akw.eta)), 3))
 
 if args.plot:
     print_fkw(model_Akw)
