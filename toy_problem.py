@@ -9,6 +9,8 @@ from copy import deepcopy
 from matplotlib.animation import FuncAnimation
 import argparse
 
+from three_bands import Three_band_model
+
 default_args = {
     'lr' : 0.05,
     'loss' : 'JS',
@@ -63,7 +65,7 @@ def print_fkw(function_of_kx_ky_w, w=0, save_path=None, idx=0):
     ## for compatibility with neural nets
     kxx = kxx.unsqueeze(-1)
     kyy = kyy.unsqueeze(-1)
-    w = (w*torch.ones_like(kxx)).float()
+    w = w*torch.ones_like(kxx).float()
     
     Akw_on_mesh = function_of_kx_ky_w(kxx,kyy,w)
     if isinstance(Akw_on_mesh, tuple):
@@ -92,16 +94,27 @@ def YRZ_sigma(kx, ky, omega, delta=0.2, eta=0.05):
     return re_sigma, im_sigma
 
 
-def target_Akw(kx, ky, w, eta=0.1, delta=0.3):
+def target_2bAkw(kx, ky, w, eta=0.1, delta=0.3):
     re_sigma, im_sigma = YRZ_sigma(kx,ky,w, delta, eta)
     xi = dispersion(kx,ky)
-    return spectral_weight(w, xi, eta, re_sigma, im_sigma)
+    sw = spectral_weight(w, xi, eta, re_sigma, im_sigma)
+    return sw
 
+
+tbm = Three_band_model(charge_tansfer=-2.61, tpd=1.29, tpp=0.64, tpp2=0.103)
+def target_Akw(kx, ky, w, eta=0.1, ed=-1.8):
+    xi = dispersion(kx,ky)
+    xi = tbm.bands(kx,ky, ed)[0]
+    kx = kx.unsqueeze(-1)
+    ky = ky.unsqueeze(-1)
+    w = w.unsqueeze(-1)
+    sw = spectral_weight(w, xi, eta)
+    return sw.sum(-1)
 
 print('target')
 print_fkw(target_Akw)
-print_fkw(YRZ_sigma, idx=0)
-print_fkw(YRZ_sigma, idx=1)
+# print_fkw(YRZ_sigma, idx=0)
+# print_fkw(YRZ_sigma, idx=1)
 
 
 class Differentiable_spectral_weight(nn.Module):
@@ -171,7 +184,7 @@ class Differentiable_spectral_weight_with_self(nn.Module):
         return out
 
 
-model_Akw = Differentiable_spectral_weight_with_self()
+model_Akw = Differentiable_spectral_weight()
 # print('starting model')
 # print_fkw(model_Akw)
 
