@@ -18,6 +18,7 @@ default_args = {
     'factor' : 0.9,
     'plot' : True,
     'plot_loss' : True,
+    'plot_self' : False,
     'animate' : False,
     'optim' : 'Adam',
     'batch_size' : 1000,
@@ -211,8 +212,8 @@ print('training')
 model_history = []
 loss_history = []
 for epoch in range(1,args.epochs):
-    kx_batch = torch.FloatTensor(args.batch_size).uniform_(0, np.pi)
-    ky_batch = torch.FloatTensor(args.batch_size).uniform_(0, np.pi)
+    kx_batch = torch.FloatTensor(args.batch_size).uniform_(-np.pi, np.pi)
+    ky_batch = torch.FloatTensor(args.batch_size).uniform_(-np.pi, np.pi)
     W = args.window/2
     w_batch = torch.FloatTensor(args.batch_size).uniform_(-W, W)
 
@@ -258,11 +259,9 @@ if args.plot:
 if args.plot_loss:
     plt.plot(loss_history)
     plt.show()
-
-print('real self')
-print_fkw(model_Akw.neural_self, idx=0)
-print('imaginary self')
-print_fkw(model_Akw.neural_self, idx=1)
+if args.plot_self:
+    print_fkw(model_Akw.neural_self, idx=0)
+    print_fkw(model_Akw.neural_self, idx=1)
 
 if args.animate:
     print("preparing animation")
