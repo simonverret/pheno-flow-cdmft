@@ -21,7 +21,7 @@ default_args = {
     'animate' : False,
     'optim' : 'Adam',
     'batch_size' : 1000,
-    'epochs': 500
+    'epochs': 500,
     'window': 0.5,
 }
 
