@@ -5,14 +5,14 @@ from neural_nets import ThreeToOneNN
 
 
 class Differentiable_one_band(nn.Module, One_band):
-    def __init__(self, eta=0.05, **kw):
+    def __init__(self, eta=0.5, **kw):
         super().__init__()
         One_band.__init__(self, **kw)
+        self.t = nn.Parameter(torch.Tensor([self.t]))
         self.tp = nn.Parameter(torch.Tensor([self.tp]))
         self.tpp = nn.Parameter(torch.Tensor([self.tpp]))
         self.mu = nn.Parameter(torch.Tensor([self.mu]))
         self.eta = nn.Parameter(torch.Tensor([eta]))
-
     def forward(self, kx, ky, w):
         return self.spectral_weight(kx, ky, w, eta=torch.abs(self.eta))
 

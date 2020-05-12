@@ -21,7 +21,7 @@ class One_band():
         xi -= self.mu 
         return xi
 
-    def spectral_weight(self, kx, ky, w, eta=0.1):
+    def spectral_weight(self, kx, ky, w, eta=0.05):
         xi = self.dispersion(kx,ky)
         return eta / ((w - xi)**2 + eta**2)
 
@@ -47,44 +47,41 @@ class YRZ_model(One_band):
 
 
 class Three_bands():
-    def __init__(self, charge_tansfer=-2.61, tpd=1.39, tpp=0.64, tpp2=0.103):
-        self.charge_tansfer = charge_tansfer
+    def __init__(self, ed=-0.5, ep=-3.11, tpd=1.39, tpp1=0.64, tpp2=0.103):
         self.tpd = tpd
-        self.tpp = tpp
+        self.tpp1 = tpp1
         self.tpp2 = tpp2
-
-    def hamiltonian_matrix(self, kx, ky, ed=0):
-        ed = ed * torch.ones_like(kx)
-        ep = ed - self.charge_tansfer
+        self.ed = ed
+        self.ep = ep
         
-        # element-wise definition of the hamiltonian
-        H11 = ed
+    def hamiltonian_matrix(self, kx, ky):
+        H11 = self.ed * torch.ones_like(kx)
         H12 = 2*self.tpd*torch.sin(kx/2)
         H13 = -2*self.tpd*torch.sin(ky/2)
         H21 = H12
-        H22 = ep + self.tpp2*torch.cos(kx)
-        H23 = -4*self.tpp*torch.sin(kx/2)*torch.sin(ky/2)
+        H22 = self.ep + self.tpp2*torch.cos(kx)
+        H23 = -4*self.tpp1*torch.sin(kx/2)*torch.sin(ky/2)
         H31 = H13
         H32 = H23
-        H33 = ep + 2*self.tpp2*torch.cos(ky)
+        H33 = self.ep + 2*self.tpp2*torch.cos(ky)
 
-        # cannot make a tensor from a list of tensor so let's stack them up
+        # couldn't make a tensor from a list of tensor so stack them up
         row1 = torch.stack((H11, H12, H13), dim=-1)
         row2 = torch.stack((H21, H22, H23), dim=-1)
         row3 = torch.stack((H31, H32, H33), dim=-1)
         H = torch.stack((row1, row2, row3), dim=-1)
         return H
     
-    def bands(self, kx, ky, ed=0):
-        H = self.hamiltonian_matrix(kx, ky, ed)
+    def bands(self, kx, ky):
+        H = self.hamiltonian_matrix(kx, ky)
         eigenvals = torch.symeig(H)
         return eigenvals
 
-    def spectral_weight(self, kx, ky, ww, eta=0.05, ed=-1.8):
-        xi = self.bands(kx,ky, ed)[0]
+    def spectral_weight(self, kx, ky, ww, eta=0.05):
+        xi = self.bands(kx,ky)[0]
         # unsqueeze to vectorize computation on the three bands
         if not isinstance(ww, torch.FloatTensor):
-            ww = torch.tensor([ww])
+            ww = torch.Tensor([ww])
         kx = kx.unsqueeze(-1)
         ky = ky.unsqueeze(-1)
         ww = ww.unsqueeze(-1)

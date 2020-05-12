@@ -25,10 +25,7 @@ def print_spectrum(function_of_kx_ky_w, save_path=None, idx=0):
     Akw_on_mesh = Akw_on_mesh.squeeze()
     fig = plt.figure(figsize=(4, 6), dpi=80, facecolor='w', edgecolor='k')
     ax = plt.subplot(111)
-    ax.set_aspect('equal', 'box')
-    ax.pcolormesh(
-        np.transpose(Akw_on_mesh.detach()),
-    )
+    ax.pcolormesh(np.transpose(Akw_on_mesh.detach()))
     if save_path is not None: 
         plt.savefig(save_path)
     plt.show()
@@ -63,18 +60,18 @@ def print_fermi_surface(function_of_kx_ky_w, w=0, save_path=None, idx=0):
         plt.savefig(save_path)
     plt.show()
 
-def animate_fermi_surface(model_history, target_model):
+def animation(model_history, target_model):
     print("preparing animation")
+    
+    # fermi surface 
     kx = torch.linspace(0,np.pi,101)
     ky = torch.linspace(0,np.pi,101)
     kxx, kyy = torch.meshgrid(kx, ky)
     Akw_on_mesh = model_history[0](kxx,kyy,0)
     target_Akw_on_mesh = target_model.spectral_weight(kxx,kyy,0)
 
-    error_on_mesh = torch.abs(Akw_on_mesh - target_Akw_on_mesh)
-
-    fig = plt.figure(figsize=(4, 6), dpi=80, facecolor='w', edgecolor='k')
-    ax1 = plt.subplot(211)
+    fig = plt.figure(figsize=(10, 6), dpi=80, facecolor='w', edgecolor='k')
+    ax1 = plt.subplot(221)
     ax1.set_aspect('equal', 'box')
     ax1.pcolormesh(
         np.transpose(kx),
@@ -82,19 +79,42 @@ def animate_fermi_surface(model_history, target_model):
         np.transpose(Akw_on_mesh.detach()),
     )
     
-    ax2 = plt.subplot(212)
+    ax2 = plt.subplot(223)
     ax2.set_aspect('equal', 'box')
     error = ax2.pcolormesh(
         np.transpose(kx),
         np.transpose(ky),
-        np.transpose(error_on_mesh.detach()),
+        np.transpose(target_Akw_on_mesh.detach()),
         vmin=0, vmax = 5,
     )
     fig.colorbar(error, ax=ax2)
 
+
+    # spectrum
+    skx = torch.cat((
+        torch.linspace(0,np.pi,101).float(),
+        np.pi*torch.ones(101).float(),
+        torch.linspace(np.pi,0,143).float(),
+    ))
+    sky = torch.cat((
+        torch.zeros(101).float(),
+        torch.linspace(0,np.pi,101).float(),
+        torch.linspace(np.pi,0,143).float(),
+    ))
+    sw = torch.linspace(-5,5,100)
+    skxx, sww = torch.meshgrid(skx, sw)
+    skyy, sww = torch.meshgrid(sky, sw)
+    spectrum_on_mesh = model_history[0](skxx,skyy,sww)
+    target_spectrum_on_mesh = target_model.spectral_weight(skxx,skyy,sww)
+    ax3 = plt.subplot(222)
+    ax3.pcolormesh(np.transpose(spectrum_on_mesh.detach()))
+    
+    ax4 = plt.subplot(224)
+    ax4.pcolormesh(np.transpose(target_spectrum_on_mesh.detach()))
+
     def animate(i):
         new_Akw_on_mesh = model_history[i](kxx,kyy,0)
-        new_error_on_mesh = torch.abs(new_Akw_on_mesh - target_Akw_on_mesh)
+        new_spectrum_on_mesh = model_history[i](skxx,skyy,sww)
         ax1.pcolormesh(
             np.transpose(kx),
             np.transpose(ky),
@@ -103,8 +123,10 @@ def animate_fermi_surface(model_history, target_model):
         ax2.pcolormesh(
             np.transpose(kx),
             np.transpose(ky),
-            np.transpose(new_error_on_mesh.detach()),
+            np.transpose(target_Akw_on_mesh.detach()),
         )
+        ax3.pcolormesh(np.transpose(new_spectrum_on_mesh.detach()))
+        ax4.pcolormesh(np.transpose(target_spectrum_on_mesh.detach()))
 
     anim = FuncAnimation(fig, animate, 
         frames=len(model_history), 
