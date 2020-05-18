@@ -33,19 +33,19 @@ def manual_loss(Amodel, Atarget):
 
 
 default_args = {
-    'lr' : 0.1,
+    'lr' : 0.01,
     'loss' : 'KL',
     'schedule' : 'exp',
-    'factor' : 0.998,
+    'factor' : 0.9998,
     'plot' : True,
-    'plot_loss' : False,
-    'animate' : False,
+    'plot_loss' : True,
+    'animate' : True,
     'optim' : 'SGD',
     'batch_size' : 500,
     'batch_schedule': 1.001,
-    'max_batch_size': 1000,
+    'max_batch_size': 2000,
     'epochs': 5000,
-    'window': 3.0
+    'window': 4.0
 }
 
 help = {
@@ -78,17 +78,15 @@ for key, val in default_args.items():
         parser.add_argument("--"+key, type=type(val), default=val, help=help[key])
 args = parser.parse_known_args()[0]
 
-
-target_model = Three_bands(ed=-2.5, ep=-4.0, tpd=1.5, tpp1=1.0, tpp2=0.2)
-# target_model = One_band()
-if args.plot:
-    print('target')
-    print_spectrum(target_model.spectral_weight)
-
 model = Differentiable_one_band(tp=0, tpp=0, mu=0, eta=0.2)
 if args.plot:
     print('starting model')
     print_spectrum(model.spectral_weight)
+
+target_model = Three_bands(mu=5.8)
+if args.plot:
+    print('target')
+    print_spectrum(target_model.spectral_weight)
 
 if args.optim == 'adam' or args.optim == 'Adam':
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=0.1)

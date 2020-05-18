@@ -47,23 +47,24 @@ class YRZ_model(One_band):
 
 
 class Three_bands():
-    def __init__(self, ed=-0.5, ep=-3.11, tpd=1.39, tpp1=0.64, tpp2=0.103):
+    def __init__(self, ed=0, ep=2.5, tpd=2.1, tpp1=1, tpp2=0.2, mu=6):
         self.tpd = tpd
         self.tpp1 = tpp1
         self.tpp2 = tpp2
         self.ed = ed
         self.ep = ep
+        self.mu = mu
         
     def hamiltonian_matrix(self, kx, ky):
-        H11 = self.ed * torch.ones_like(kx)
+        H11 = self.ed * torch.ones_like(kx) - self.mu
         H12 = 2*self.tpd*torch.sin(kx/2)
         H13 = -2*self.tpd*torch.sin(ky/2)
         H21 = H12
-        H22 = self.ep + self.tpp2*torch.cos(kx)
+        H22 = self.ep + self.tpp2*torch.cos(kx) - self.mu
         H23 = -4*self.tpp1*torch.sin(kx/2)*torch.sin(ky/2)
         H31 = H13
         H32 = H23
-        H33 = self.ep + 2*self.tpp2*torch.cos(ky)
+        H33 = self.ep + 2*self.tpp2*torch.cos(ky) - self.mu
 
         # couldn't make a tensor from a list of tensor so stack them up
         row1 = torch.stack((H11, H12, H13), dim=-1)
