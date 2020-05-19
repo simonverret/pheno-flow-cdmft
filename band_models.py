@@ -60,7 +60,7 @@ class Three_bands():
         H12 = 2*self.tpd*torch.sin(kx/2)
         H13 = -2*self.tpd*torch.sin(ky/2)
         H21 = H12
-        H22 = self.ep + self.tpp2*torch.cos(kx) - self.mu
+        H22 = self.ep + 2*self.tpp2*torch.cos(kx) - self.mu
         H23 = -4*self.tpp1*torch.sin(kx/2)*torch.sin(ky/2)
         H31 = H13
         H32 = H23

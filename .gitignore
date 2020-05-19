@@ -3,3 +3,4 @@
 __pycache__
 .ipynb_checkpoints
 .vscode
+test_double_inheritance.py

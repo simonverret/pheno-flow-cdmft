@@ -36,16 +36,16 @@ default_args = {
     'lr' : 0.01,
     'loss' : 'KL',
     'schedule' : 'exp',
-    'factor' : 0.9998,
-    'plot' : True,
-    'plot_loss' : True,
-    'animate' : True,
+    'factor' : 0.9995,
+    'plot' : False,
+    'plot_loss' : False,
+    'animate' : False,
     'optim' : 'SGD',
     'batch_size' : 500,
     'batch_schedule': 1.001,
     'max_batch_size': 2000,
-    'epochs': 5000,
-    'window': 4.0
+    'epochs': 8000,
+    'window': 2.0
 }
 
 help = {
@@ -83,7 +83,7 @@ if args.plot:
     print('starting model')
     print_spectrum(model.spectral_weight)
 
-target_model = Three_bands(mu=5.8)
+target_model = Three_bands(tpp1=1., tpp2=1., tpd=1.5, ed=0, ep=7, mu=9.5)
 if args.plot:
     print('target')
     print_spectrum(target_model.spectral_weight)
@@ -146,11 +146,11 @@ for epoch in range(1,args.epochs):
         model_history.append(deepcopy(model))
         print(f"batch {epoch}")
         print(f'  loss = {loss:8.4f}   lr = {rate:8.8f}   bs = {batch_size}')
-        print("    t = ", round(float(model.t), 3))
-        print("    tp = ", round(float(model.tp), 3))
-        print("    tpp = ", round(float(model.tpp), 3))
-        print("    mu = ", round(float(model.mu), 3))
-        print("    eta = ", round(abs(float(model.eta)), 3))
+        print(f"    t = {round(float(model.t), 3)}")
+        print(f"    tp = {round(float(model.tp/model.t), 3)}t")
+        print(f"    tpp = {round(float(model.tpp/model.t), 3)}t")
+        print(f"    mu = {round(float(model.mu/model.t), 3)}t")
+        print(f"    eta = {round(abs(float(model.eta)), 3)}")
     
 
 if args.plot:
